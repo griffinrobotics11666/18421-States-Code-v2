@@ -44,37 +44,71 @@ public class GamepadEx {
         this.internal = gamepad;
     }
 
-    public boolean getState(GamepadButtons button){
+    private Button getButton(GamepadButtons button){
         switch(button){
-            case A: return a.getState();
-            case B: return b.getState();
-            case BACK: return back.getState();
-            case X: return x.getState();
-            case Y: return y.getState();
-            case START: return start.getState();
-            case DPAD_UP: return dpad_up.getState();
-            case DPAD_DOWN: return dpad_down.getState();
-            case DPAD_LEFT: return dpad_left.getState();
-            case DPAD_RIGHT: return dpad_right.getState();
-            case LEFT_BUMPER: return left_bumper.getState();
-            case LEFT_TRIGGER: return left_trigger.getState();
-            case RIGHT_BUMPER: return right_bumper.getState();
-            case RIGHT_TRIGGER: return right_trigger.getState();
-            case LEFT_STICK_BUTTON: return left_stick_button.getState();
-            case RIGHT_STICK_BUTTON: return right_stick_button.getState();
-            case PS: return ps.getState();
-            case CROSS: return cross.getState();
-            case GUIDE: return guide.getState();
-            case SHARE: return share.getState();
-            case CIRCLE: return circle.getState();
-            case SQUARE: return square.getState();
-            case OPTIONS: return options.getState();
-            case TOUCHPAD: return touchpad.getState();
-            case TRIANGLE: return triangle.getState();
+            case A: return a;
+            case B: return b;
+            case BACK: return back;
+            case X: return x;
+            case Y: return y;
+            case START: return start;
+            case DPAD_UP: return dpad_up;
+            case DPAD_DOWN: return dpad_down;
+            case DPAD_LEFT: return dpad_left;
+            case DPAD_RIGHT: return dpad_right;
+            case LEFT_BUMPER: return left_bumper;
+            case RIGHT_BUMPER: return right_bumper;
+            case LEFT_STICK_BUTTON: return left_stick_button;
+            case RIGHT_STICK_BUTTON: return right_stick_button;
+            case PS: return ps;
+            case CROSS: return cross;
+            case GUIDE: return guide;
+            case SHARE: return share;
+            case CIRCLE: return circle;
+            case SQUARE: return square;
+            case OPTIONS: return options;
+            case TOUCHPAD: return touchpad;
+            case TRIANGLE: return triangle;
         }
-        return false;
+        return null;
+    }
+    
+    public Trigger getTrigger(GamepadButtons button){
+        switch(button){
+            case RIGHT_TRIGGER: return right_trigger;
+            case LEFT_TRIGGER: return left_trigger;
+        }
+        return null;
+    }
+    
+    public boolean getState(GamepadButtons button){
+        if(button == GamepadButtons.LEFT_TRIGGER || button == GamepadButtons.RIGHT_TRIGGER){
+            return getTrigger(button).getState();
+        }
+        else {
+            return getButton(button).getState();
+        }
     }
 
+    public boolean setState(GamepadButtons button, boolean state){
+        if(button == GamepadButtons.LEFT_TRIGGER || button == GamepadButtons.RIGHT_TRIGGER){
+            return false;
+        }
+        else {
+            getButton(button).setState(state);
+            return true;
+        }
+    }
+
+    public boolean justPressed(GamepadButtons button){
+        if(button == GamepadButtons.LEFT_TRIGGER || button == GamepadButtons.RIGHT_TRIGGER){
+            return getTrigger(button).justPressed();
+        }
+        else {
+            return getButton(button).justPressed();
+        }
+    }
+    
     /**
      * Updates the values of the {@link GamepadEx} object to match those of the actual gamepad ({@link #internal}). Required for the buttons to work.
      */

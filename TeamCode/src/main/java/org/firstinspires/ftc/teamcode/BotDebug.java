@@ -21,6 +21,7 @@ public class BotDebug extends LinearOpMode {
     public static double ringPushingPosition = 0.34;
     public static double ringShootingPosition = 0.1;
     public static double armPosition = 0;
+    public static double handPosition = 0;
     public static double latchPosition = 0.5;
     public static boolean canDrive = true;
 
@@ -87,6 +88,7 @@ public class BotDebug extends LinearOpMode {
             bot.Intake.setPower(intakePower);
 //            bot.Trigger.setPosition(ringPushingPosition);
             bot.Arm.setPosition(armPosition);
+            bot.Hand.setPosition(handPosition);
             bot.Latch.setPosition(latchPosition);
             Pose2d currentPose = bot.getPoseEstimate();
             Pose2d currentVelocity = bot.getPoseVelocity();

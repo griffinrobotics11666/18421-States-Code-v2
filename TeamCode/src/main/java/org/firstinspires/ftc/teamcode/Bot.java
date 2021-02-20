@@ -148,7 +148,7 @@ public class Bot extends MecanumDrive {
     /*Hardware Variables*/
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     private List<DcMotorEx> motors;
-    private BNO055IMU imu;
+//    private BNO055IMU imu;
     public DcMotorEx Shooter;
     public DcMotorEx Intake;
     public Servo Trigger;
@@ -201,14 +201,14 @@ public class Bot extends MecanumDrive {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
         
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        BNO055IMU.Parameters IMUparameters = new BNO055IMU.Parameters();
-        IMUparameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
-        imu.initialize(IMUparameters);
+//        imu = hardwareMap.get(BNO055IMU.class, "imu");
+//        BNO055IMU.Parameters IMUparameters = new BNO055IMU.Parameters();
+//        IMUparameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+//        imu.initialize(IMUparameters);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
-        // upward (normal to the floor) using a command like the following:
-        BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+//        // upward (normal to the floor) using a command like the following:
+//        BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
         
         leftFront = hardwareMap.get(DcMotorEx.class, "left_front");
         leftRear = hardwareMap.get(DcMotorEx.class, "left_back");
@@ -452,27 +452,29 @@ public class Bot extends MecanumDrive {
         telemetry.addData("headingError", lastError.getHeading());
 
 //        Vuforia Localization
-        if(vuforiaLocalizer.targetVisible){
+        if(usingVuforia) {
+            if (vuforiaLocalizer.targetVisible) {
             /*There's an option to disable automatic vuforia localization (usingVuforia)
               And a velocity cap on it so that vuforia doesn't try to read blurry images
              */
-            fieldOverlay.setStroke("#eb3434");
-            DashboardUtil.drawRobot(fieldOverlay, vuforiaLocalizer.lastPose);
-            telemetry.addData("supposed vuforia pose",vuforiaLocalizer.lastPose);
-            assert currentVelocity != null;
-            if(currentVelocity.getX()+currentVelocity.getY()+currentVelocity.getHeading()<0.5 && usingVuforia) {
-                setPoseEstimate(vuforiaLocalizer.lastPose);
+                fieldOverlay.setStroke("#eb3434");
+                DashboardUtil.drawRobot(fieldOverlay, vuforiaLocalizer.lastPose);
+                telemetry.addData("supposed vuforia pose", vuforiaLocalizer.lastPose);
+                assert currentVelocity != null;
+                if (currentVelocity.getX() + currentVelocity.getY() + currentVelocity.getHeading() < 0.5) {
+                    setPoseEstimate(vuforiaLocalizer.lastPose);
+                }
             }
+            vuforiaLocalizer.update();
         }
-        vuforiaLocalizer.update();
 
         //OpenCV debugging
 //        camera.setPipeline(new RingPipeline());
 
-        //Experimental Ring Capacity Detection
-        telemetry.addData("Intake current", Intake.getCurrent(CurrentUnit.AMPS));
-        telemetry.addData("Shooter current", Shooter.getCurrent(CurrentUnit.AMPS));
-        telemetry.addData("Num rings", numRings);
+//        //Experimental Ring Capacity Detection
+//        telemetry.addData("Intake current", Intake.getCurrent(CurrentUnit.AMPS));
+//        telemetry.addData("Shooter current", Shooter.getCurrent(CurrentUnit.AMPS));
+//        telemetry.addData("Num rings", numRings);
 //        if(Intake.getCurrent(CurrentUnit.AMPS)<2.6){
 //            if(feedingPeak>3.0){
 //                numRings++;
@@ -663,9 +665,9 @@ public class Bot extends MecanumDrive {
 
     @Override
     public double getRawExternalHeading() {
-        return imu.getAngularOrientation().firstAngle;
+        return 0.0;
     }
     public void resetHeading(){
-        setExternalHeading(0.0);
+        setPoseEstimate(new Pose2d(getPoseEstimate().vec(), 0));
     }
 }

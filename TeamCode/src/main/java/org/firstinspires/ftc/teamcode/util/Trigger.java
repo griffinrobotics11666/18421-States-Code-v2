@@ -26,9 +26,17 @@ public class Trigger {
     public float getValue(){
         return value;
     }
-    public float setValue(float value){
+    public void setValue(float value){
+        lastValue = this.value;
         this.value = value;
-        return this.value;
+        if(this.value>threshold){
+            lastState = state;
+            state = true;
+        }
+        else {
+            lastState = state;
+            state = false;
+        }
     }
 
     public boolean getState(){

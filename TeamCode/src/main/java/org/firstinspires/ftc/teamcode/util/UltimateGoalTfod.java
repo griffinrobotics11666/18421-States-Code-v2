@@ -88,7 +88,7 @@ public class UltimateGoalTfod {
     public void update(){
         // getUpdatedRecognitions() will return null if no new information is available since
         // the last time that call was made.
-        List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+        List<Recognition> updatedRecognitions = tfod.getRecognitions();
         targetVisible = false;
         if (updatedRecognitions != null) {
             if(!updatedRecognitions.isEmpty()) {

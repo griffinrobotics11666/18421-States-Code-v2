@@ -22,7 +22,7 @@ import org.firstinspires.ftc.teamcode.util.GamepadEx;
 public class BotDriveControl extends LinearOpMode {
     //Controls
     /*
-    A = Toggle Arm Position - Low,High,Middle
+    A = Open/Close Hand
     B = Intake Toggle
     X = Shoot Button - Only works if shooter is on
     Y = Shooter Toggle
@@ -32,15 +32,15 @@ public class BotDriveControl extends LinearOpMode {
 
     Dpad Left = Reverse Feeder - Only works if feeder is off
     Dpad Down = Quit Path Following
-    Dpad Up = Reset Position using Vuforia
+    Dpad Up = Reset Position to the top right corner
     Dpad Right = Reset Heading to 0 (Straight towards the goals)
 
     Back = Toggle Field Centric Drive
 
-    Left Bumper = Automatically drive to shoot at High Goal
+    Right Trigger = Toggle Arm Position between Low, Middle, and High
 
-    Left Trigger = Linear Slide down
-    Right Trigger = Linear Slide up
+    Left Bumper = Automatically drive to shoot at High Goal
+    Right Bumper = Automatically drive to shoot at Powershot Targets
      */
     private GamepadEx gamepad;
 
@@ -65,6 +65,7 @@ public class BotDriveControl extends LinearOpMode {
     private ShootingState shoot = ShootingState.SHOOT;
     private Button isShooting = new Button();
     private Button isFeeding = new Button();
+    private Button handState = new Button();
     private Cycle wobbleMode = new Cycle(3);
     private boolean isBackPressed = false;
     private double linearSlideCoefficient = 1;
@@ -86,7 +87,8 @@ public class BotDriveControl extends LinearOpMode {
         drive.usingVuforia = false;
 
         drive.initVision();
-        drive.Arm.setPosition(0.99);
+        drive.Arm.setPosition(0);
+        drive.Hand.setPosition(0.45);
         drive.Trigger.setPosition(triggerStart);
         drive.Latch.setPosition(0.0);
 
@@ -104,21 +106,32 @@ public class BotDriveControl extends LinearOpMode {
                     //Wobble Cycle
                     switch(wobbleMode.getValue()){
                         case 1: {
-                            drive.Arm.setPosition(0.99);
+                            drive.Arm.setPosition(0);
                             break;
                         }
                         case 2: {
-                            drive.Arm.setPosition(0.4);
+                            drive.Arm.setPosition(0.94);
                             break;
                         }
                         case 3: {
-                            drive.Arm.setPosition(0.7);
+                            drive.Arm.setPosition(0.45);
                             break;
                         }
                     }
                     drive.telemetry.addData("wobble state", wobbleMode.getValue());
-                    if(gamepad.a.justPressed()){
+                    if(gamepad.right_trigger.justPressed()){
                         wobbleMode.cycle();
+                    }
+
+                    //Hand Toggle
+                    if(gamepad.a.justPressed()){
+                        handState.toggle();
+                    }
+                    if(handState.getState()){
+                        drive.Hand.setPosition(0.08);
+                    }
+                    else {
+                        drive.Hand.setPosition(0.45);
                     }
 
                     //Intake Toggle
@@ -215,11 +228,11 @@ public class BotDriveControl extends LinearOpMode {
                     if(gamepad.right_bumper.justPressed() && !arePowerShooting){
                         arePowerShooting = true;
                         shootSpeed = 0.8;
-//                        Trajectory initialPos = drive.trajectoryBuilder(currentPose)
-//                                .lineToLinearHeading(powerShot)
-//                                .build();
-//                        drive.followTrajectoryAsync(initialPos);
-//                        mode = Mode.PATH_FOLLOWING;
+                        Trajectory initialPos = drive.trajectoryBuilder(currentPose)
+                                .lineToLinearHeading(powerShot)
+                                .build();
+                        drive.followTrajectoryAsync(initialPos);
+                        mode = Mode.PATH_FOLLOWING;
                     }
                     else if(gamepad.right_bumper.justPressed() && arePowerShooting){
                         Trajectory adjust = drive.trajectoryBuilder(currentPose)
@@ -235,10 +248,7 @@ public class BotDriveControl extends LinearOpMode {
 
                     //Reset Position
                     if(gamepad.dpad_up.isPressed()){
-                        drive.usingVuforia = true;
-                    }
-                    else {
-                        drive.usingVuforia = false;
+                        drive.setPoseEstimate(new Pose2d(63, -63, 0));
                     }
 
                     //Reset Heading

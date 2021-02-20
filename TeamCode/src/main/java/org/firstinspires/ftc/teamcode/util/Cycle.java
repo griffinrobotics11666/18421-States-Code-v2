@@ -34,10 +34,27 @@ public class Cycle {
     /**
      * cycles this {@link Cycle} between {@code 1} and {@code numCycles}. If the value is already {@code numCycles}, it becomes {@code 1}.
      */
-    public void cycle(){
+    public void cycle(boolean reversed){
+        if(reversed){
+            value--;
+        }
+        else {
+            value++;
+        }
+        if(value > numValues){
+            value = 1;
+        }
+        if(value < 1){
+            value = numValues;
+        }
+    }
+    public void cycle() {
         value++;
         if(value > numValues){
             value = 1;
+        }
+        if(value < 1){
+            value = numValues;
         }
     }
 
