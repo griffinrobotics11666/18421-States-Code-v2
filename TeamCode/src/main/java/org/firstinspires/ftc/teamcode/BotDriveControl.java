@@ -23,38 +23,45 @@ public class BotDriveControl extends LinearOpMode {
     //Controls
     /*
     A = Open/Close Hand
-    B = Intake Toggle
+    B =
     X = Shoot Button - Only works if shooter is on
-    Y = Shooter Toggle
+    Y = Intake Toggle
 
     Left Joystick = Drive
     Right Joystick = Turn
 
-    Dpad Left = Reverse Feeder - Only works if feeder is off
+    Dpad Up = Reverse Feeder - If the feeder is on it will turn it off first
     Dpad Down = Quit Path Following
-    Dpad Up = Reset Position to the top right corner
-    Dpad Right = Reset Heading to 0 (Straight towards the goals)
+    Dpad Left =
+    Dpad Right =
 
-    Back = Toggle Field Centric Drive
+    Back = Reset Heading to 0 (Straight towards the goals)
+    Start = Toggle Field Centric Drive
 
-    Right Trigger = Toggle Arm Position between Low, Middle, and High
+    Right Stick Button = Reset Position to the top left
+    Left Stick Button = Reset Powershot following
 
-    Left Bumper = Automatically drive to shoot at High Goal
-    Right Bumper = Automatically drive to shoot at Powershot Targets
+    Left Trigger = Toggle Arm Position between Low, Middle, and High
+    Right Trigger = Turn on Shooter
+
+    Right Bumper = Automatically drive to shoot at High Goal
+    Left Bumper = Automatically drive to shoot at Powershot Targets
      */
     private GamepadEx gamepad;
 
-    private static double triggerStart = 0.34;
-    private static double triggerEnd = 0.1;
+    private static double triggerStart = 0.3;
+    private static double triggerEnd = 0.6;
 
     private Button fieldCentric = new Button(true);
-    public static Pose2d highGoal = new Pose2d(-5,-36, Math.toRadians(0));
-    public static Pose2d powerShot = new Pose2d(2, -18.5, Math.toRadians(0));
+    public static Pose2d highGoal = new Pose2d(-3,-36, Math.toRadians(0));
+    public static Pose2d powerShot = new Pose2d(-3, -18.5, Math.toRadians(0));
+    public static Pose2d wobbleDrop = new Pose2d(-60, -23.25, Math.toRadians(90));
     private boolean arePowerShooting = false;
 //    public static Pose2d middlePower = new Pose2d(2, -11.5, Math.toRadians(0));
 //    public static Pose2d leftPower = new Pose2d(2, -5.5, Math.toRadians(0));
 
     private ElapsedTime shootingClock = new ElapsedTime();
+    private ElapsedTime reversalClock = new ElapsedTime();
     public static double shootingDelay = 300;
     public static double shootingCooldown = 300;
     private enum ShootingState{
@@ -63,13 +70,22 @@ public class BotDriveControl extends LinearOpMode {
         WAIT
     }
     private ShootingState shoot = ShootingState.SHOOT;
+    public static double defaultSpeed = 2587;
     private Button isShooting = new Button();
     private Button isFeeding = new Button();
+    public static double intakeReversalDelay = 500;
+    private Button isReversing = new Button();
     private Button handState = new Button();
     private Cycle wobbleMode = new Cycle(3);
     private boolean isBackPressed = false;
     private double linearSlideCoefficient = 1;
-    private double shootSpeed = 1;
+    private double targetHeight = 35.8;
+    private Vector2d targetPos = new Vector2d(70.75, -46.5+12);
+    public static double highGoalHeight = 35.8;
+    public static double powerShotHeight = 30.8;
+    public static Vector2d highGoalPos = new Vector2d(70.75, -46.5+12);
+    public static double shotDistance = 70.75;
+
 
     private enum Mode {
         DRIVER_CONTROL,
@@ -83,17 +99,14 @@ public class BotDriveControl extends LinearOpMode {
         Bot drive = new Bot(hardwareMap);
         drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         drive.setPoseEstimate(PoseStorage.currentPose);
-        drive.telemetry.addTelemetry(telemetry);
         drive.usingVuforia = false;
 
-        drive.initVision();
         drive.Arm.setPosition(0);
+        drive.Arm.setSpeed(1);
+
         drive.Hand.setPosition(0.45);
         drive.Trigger.setPosition(triggerStart);
-        drive.Latch.setPosition(0.0);
 
-        drive.telemetry.addData("Ready!", "");
-        drive.telemetry.update();
         waitForStart();
 
         while(opModeIsActive() && !isStopRequested()){
@@ -118,8 +131,10 @@ public class BotDriveControl extends LinearOpMode {
                             break;
                         }
                     }
-                    drive.telemetry.addData("wobble state", wobbleMode.getValue());
-                    if(gamepad.right_trigger.justPressed()){
+//                    drive.telemetry.addData("wobble state", wobbleMode.getValue());
+//                    drive.telemetry.addData("desired Arm position", drive.Arm.getDesiredPosition());
+//                    drive.telemetry.addData("Arm speed", drive.Arm.getSpeed());
+                    if(gamepad.left_trigger.justPressed()){
                         wobbleMode.cycle();
                     }
 
@@ -141,28 +156,32 @@ public class BotDriveControl extends LinearOpMode {
                     if(isFeeding.isPressed()){
                         drive.Intake.setPower(-0.6);
                     }
-                    else {
-                        //Intake Reversal
-                        if(gamepad.dpad_left.isPressed()){
-                            drive.Intake.setPower(0.6);
-                        }
-                        else drive.Intake.setPower(0);
+                    else if(!isReversing.getState()){
+                        drive.Intake.setPower(0);
+                    }
+
+                    //Intake Reversal
+                    if(gamepad.dpad_up.isPressed() && !isFeeding.getState()){
+                        isReversing.setState(true);
+                        drive.Intake.setPower(0.6);
+                    } else {
+                        isReversing.setState(false);
                     }
 
 
                     //Shooter Toggle
-                    if(gamepad.b.justPressed()){
-                        isShooting.toggle();
-                    }
-                    if(isShooting.isPressed()){
-                        drive.Shooter.setVelocity(1.0*shootSpeed*360, AngleUnit.DEGREES);
+//                    if(gamepad.b.justPressed()){
+//                        isShooting.toggle();
+//                    }
+                    if(gamepad.right_trigger.isPressed()){
+                        drive.Shooter.setVelocity(drive.findShooterVelocity(shotDistance, targetHeight));
                     }
                     else drive.Shooter.setVelocity(0);
 
                     //Shooting Code
                     switch(shoot){
                         case SHOOT: {
-                            if(gamepad.x.getState() && isShooting.isPressed()){
+                            if(gamepad.x.getState() && gamepad.right_trigger.isPressed()){
                                 shootingClock.reset();
                                 drive.Trigger.setPosition(triggerEnd);
                                 shoot = ShootingState.RESET;
@@ -216,7 +235,7 @@ public class BotDriveControl extends LinearOpMode {
                     }
 
                     //Automatic aim code
-                    if(gamepad.left_bumper.justPressed()){
+                    if(gamepad.right_bumper.justPressed()){
                         Trajectory followGoal = drive.trajectoryBuilder(currentPose)
                                 .lineToLinearHeading(highGoal)
                                 .build();
@@ -225,39 +244,48 @@ public class BotDriveControl extends LinearOpMode {
                     }
 
                     //Auto PowerShot code
-                    if(gamepad.right_bumper.justPressed() && !arePowerShooting){
+                    if(gamepad.left_bumper.justPressed() && !arePowerShooting){
                         arePowerShooting = true;
-                        shootSpeed = 0.8;
+                        targetHeight = powerShotHeight;
                         Trajectory initialPos = drive.trajectoryBuilder(currentPose)
                                 .lineToLinearHeading(powerShot)
                                 .build();
                         drive.followTrajectoryAsync(initialPos);
                         mode = Mode.PATH_FOLLOWING;
+
                     }
-                    else if(gamepad.right_bumper.justPressed() && arePowerShooting){
+                    else if(gamepad.left_bumper.justPressed() && arePowerShooting){
                         Trajectory adjust = drive.trajectoryBuilder(currentPose)
-                                .strafeLeft(12)
+                                .lineToConstantHeading(new Vector2d(currentPose.getX(), currentPose.getY()+6))
                                 .build();
                         drive.followTrajectoryAsync(adjust);
                         mode = Mode.PATH_FOLLOWING;
                     }
-                    if(gamepad.left_stick_button.justPressed()){
+                    if(gamepad.left_stick_button.isPressed()){
                         arePowerShooting = false;
-                        shootSpeed = 1;
+                        targetHeight = highGoalHeight;
+                    }
+
+                    if(gamepad.left_trigger.justPressed()){
+                        Trajectory dropWobble = drive.trajectoryBuilder(currentPose)
+                                .lineToLinearHeading(wobbleDrop)
+                                .build();
+                        drive.followTrajectoryAsync(dropWobble);
+                        mode = Mode.PATH_FOLLOWING;
                     }
 
                     //Reset Position
-                    if(gamepad.dpad_up.isPressed()){
-                        drive.setPoseEstimate(new Pose2d(63, -63, 0));
+                    if(gamepad.right_stick_button.isPressed()){
+                        drive.setPoseEstimate(new Pose2d(63, 14.5, 0));
                     }
 
                     //Reset Heading
-                    if(gamepad.dpad_right.justPressed()){
+                    if(gamepad.back.justPressed()){
                         drive.resetHeading();
                     }
 
                     //Field Centric Drive Toggle
-                    if(gamepad.back.justPressed()) {
+                    if(gamepad.start.justPressed()) {
                         fieldCentric.toggle();
                     }
 

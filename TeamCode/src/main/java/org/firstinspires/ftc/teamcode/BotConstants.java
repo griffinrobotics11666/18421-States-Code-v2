@@ -65,7 +65,7 @@ public class BotConstants {
      */
     //TODO: Slow Down Robot to better match actual capabilities?
     public static double MAX_VEL = 84.618765;
-    public static double MAX_ACCEL = 30;
+    public static double MAX_ACCEL = 40;
     public static double MAX_ANG_VEL = Math.toRadians(180);
     public static double MAX_ANG_ACCEL = Math.toRadians(180);
 

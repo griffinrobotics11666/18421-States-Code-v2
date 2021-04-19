@@ -11,7 +11,6 @@ public class BotPathFollowingTest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         Bot drive = new Bot(hardwareMap);
-        drive.telemetry.addTelemetry(telemetry);
 
         Path test = drive.pathBuilder(new Pose2d())
                 .lineTo(new Vector2d(36, -12))

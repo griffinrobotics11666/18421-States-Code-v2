@@ -31,19 +31,18 @@ public class BotAutonomous extends LinearOpMode {
     private String ringCount;
 
     private Trajectory wobble1;
-    private Trajectory wobble2;
+    private Trajectory wobble2End;
     private Trajectory wobble1End;
     private ElapsedTime Time = new ElapsedTime();
 
     @Override
     public void runOpMode() throws InterruptedException {
         Bot drive = new Bot(hardwareMap);
-        drive.telemetry.addTelemetry(telemetry);
         drive.usingVuforia = false;
         drive.setPoseEstimate(initialPose);
-        drive.initVision();
 
         drive.Arm.setPosition(armUp);
+        drive.Arm.setSpeed(0.3);
         drive.Hand.setPosition(handClosed);
         drive.Trigger.setPosition(triggerStart);
         drive.Latch.setPosition(0.46);
@@ -55,8 +54,11 @@ public class BotAutonomous extends LinearOpMode {
         Trajectory A1 =  drive.trajectoryBuilder(followStack.end())
                 .splineToSplineHeading(new Pose2d(12,-44, Math.toRadians(-180)), 0.0)
                 .build();
-        Trajectory A2 = drive.trajectoryBuilder(A1.end())
-                .splineToSplineHeading(new Pose2d(-30, -44, 90), Math.toRadians(-180))
+        Trajectory wobble2 = drive.trajectoryBuilder(A1.end())
+                .splineToSplineHeading(new Pose2d(-34, -42, Math.toRadians(90)), Math.toRadians(-180))
+                .build();
+        Trajectory A1End = drive.trajectoryBuilder(wobble2.end())
+                .lineToLinearHeading(new Pose2d(3, -40, Math.toRadians(-180)))
                 .build();
 //        Trajectory A1End = drive.trajectoryBuilder(A1.end())
 //                .lineToSplineHeading(new Pose2d(A1.end().getX()+6, A1.end().getY(), Math.toRadians(-180.0)))
@@ -71,14 +73,12 @@ public class BotAutonomous extends LinearOpMode {
                 .build();
         Trajectory C1 = drive.trajectoryBuilder(followStack.end(), Math.toRadians(-90))
                 .splineToConstantHeading(new Vector2d(-37,-56), 0)
-                .splineToSplineHeading(new Pose2d(53, -60, Math.toRadians(-90)), 0.0)
+                .splineToSplineHeading(new Pose2d(50, -60, Math.toRadians(-90)), 0.0)
                 .build();
         Trajectory C1End = drive.trajectoryBuilder(C1.end(), 0)
                 .lineToSplineHeading(new Pose2d(C1.end().getX()-6, C1.end().getY()-6, 0.0))
                 .build();
 
-        drive.telemetry.addData("Ready!", "");
-        drive.telemetry.update();
 //        while(!isStarted()) {
 //            drive.detectStarterStack(1);
 //        }
@@ -98,18 +98,18 @@ public class BotAutonomous extends LinearOpMode {
         switch(ringCount){
             case "None": {
                 wobble1 = A1;
-                wobble2 = A2;
+                wobble2End = A1End;
 //                wobble1End = A1End;
                 break;
             }
             case "Single": {
                 wobble1 = B1;
-                wobble1End = B1End;
+                wobble2End = A1End;
                 break;
             }
             case "Quad": {
                 wobble1 = C1;
-                wobble1End = C1End;
+                wobble2End = A1End;
                 break;
             }
         }
@@ -134,19 +134,20 @@ public class BotAutonomous extends LinearOpMode {
             sleep(500);
             drive.Arm.setPosition(armBetween);
 
-            drive.followTrajectory(wobble1);
+            drive.followTrajectory(wobble2End);
 
             drive.Arm.setPosition(armDown);
             drive.Hand.setPosition(handClosed);
             sleep(600);
-            drive.Arm.setPosition(armUp);
+            drive.Arm.setPosition(
+                    armUp);
             drive.Hand.setPosition(handOpen);
         }
 
 
         //Shoots 3 rings into High Goal
         Trajectory goShoot = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(-7, -30, Math.toRadians(1)))
+                .lineToLinearHeading(new Pose2d(-4, -36, Math.toRadians(1)))
                 .build();
         drive.followTrajectory(goShoot);
         drive.Shooter.setVelocity(500, AngleUnit.DEGREES);
@@ -166,10 +167,6 @@ public class BotAutonomous extends LinearOpMode {
                 .strafeTo(new Vector2d(11, drive.getPoseEstimate().getY()))
                 .build();
         drive.followTrajectory(parkLine);
-
-        //Prints how long autonomous took
-        drive.telemetry.addData("Time this took", Time.seconds());
-        drive.telemetry.update();
 
         //Woohoo!! 56 points!!!
         drive.deactivateVision();

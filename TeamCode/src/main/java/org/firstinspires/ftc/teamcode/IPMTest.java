@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -8,6 +9,7 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
+@Autonomous(name="IPM Test")
 public class IPMTest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -21,7 +23,7 @@ public class IPMTest extends LinearOpMode {
             @Override
             public void onOpened()
             {
-                camera.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+                camera.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT);
                 camera.setPipeline(new IPMPipeline());
                 dashboard.startCameraStream(camera, 0);
             }

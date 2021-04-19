@@ -13,7 +13,6 @@ public class BotPathAvoidanceTest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         Bot drive = new Bot(hardwareMap);
-        drive.telemetry.addTelemetry(telemetry);
 
         Path test = drive.pathBuilder(new Pose2d())
                 .lineToLinearHeading(new Pose2d(36, -12, Math.toRadians(90)))
