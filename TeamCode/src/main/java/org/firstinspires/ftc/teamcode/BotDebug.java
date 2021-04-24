@@ -90,6 +90,16 @@ public class BotDebug extends LinearOpMode {
             Pose2d currentPose = bot.getPoseEstimate();
             Pose2d currentVelocity = bot.getPoseVelocity();
             telemetry.addData("Shooter Velocity",bot.Shooter.getVelocity(AngleUnit.RADIANS));
+            if(!bot.pipeline.getLabels().isEmpty()) {
+                if (bot.pipeline.getLabels().contains("Multiple")) {
+                    telemetry.addData("Starter Stack", 4);
+                } else {
+                    telemetry.addData("Starter Stack", 1);
+                }
+            }
+            else {
+                telemetry.addData("Starter Stack", 0);
+            }
             telemetry.addData("computed Shooter Velocity", (bot.Shooter.getVelocity()/28)*2*Math.PI);
             telemetry.addData("Shooter rpm",(bot.Shooter.getVelocity()/28)*60);
             telemetry.addData("Shooter ticks/s",bot.Shooter.getVelocity());
@@ -229,6 +239,7 @@ public class BotDebug extends LinearOpMode {
                         )
                 );
             }
+            telemetry.update();
             gamepad.update();
             bot.update();
         }

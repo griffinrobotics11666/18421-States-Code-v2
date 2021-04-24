@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.util.Button;
 import org.firstinspires.ftc.teamcode.util.Cycle;
 import org.firstinspires.ftc.teamcode.util.GamepadEx;
@@ -23,7 +22,7 @@ public class BotDriveControl extends LinearOpMode {
     //Controls
     /*
     A = Open/Close Hand
-    B =
+    B = Toggle Arm Position between Low, Middle, and High
     X = Shoot Button - Only works if shooter is on
     Y = Intake Toggle
 
@@ -41,7 +40,7 @@ public class BotDriveControl extends LinearOpMode {
     Right Stick Button = Reset Position to the top left
     Left Stick Button = Reset Powershot following
 
-    Left Trigger = Toggle Arm Position between Low, Middle, and High
+    Left Trigger = Automatically drive to drop wobble goal
     Right Trigger = Turn on Shooter
 
     Right Bumper = Automatically drive to shoot at High Goal
@@ -49,8 +48,8 @@ public class BotDriveControl extends LinearOpMode {
      */
     private GamepadEx gamepad;
 
-    private static double triggerStart = 0.3;
-    private static double triggerEnd = 0.6;
+    private static double triggerStart = 0.33;
+    private static double triggerEnd = 0.45;
 
     private Button fieldCentric = new Button(true);
     public static Pose2d highGoal = new Pose2d(-3,-36, Math.toRadians(0));
@@ -79,13 +78,9 @@ public class BotDriveControl extends LinearOpMode {
     private Cycle wobbleMode = new Cycle(3);
     private boolean isBackPressed = false;
     private double linearSlideCoefficient = 1;
-    private double targetHeight = 35.8;
-    private Vector2d targetPos = new Vector2d(70.75, -46.5+12);
-    public static double highGoalHeight = 35.8;
-    public static double powerShotHeight = 30.8;
-    public static Vector2d highGoalPos = new Vector2d(70.75, -46.5+12);
-    public static double shotDistance = 70.75;
-
+    public static double highGoalPower = 2080;
+    public static double powerShotPower = 2000;
+    private double targetVelocity;
 
     private enum Mode {
         DRIVER_CONTROL,
@@ -134,7 +129,7 @@ public class BotDriveControl extends LinearOpMode {
 //                    drive.telemetry.addData("wobble state", wobbleMode.getValue());
 //                    drive.telemetry.addData("desired Arm position", drive.Arm.getDesiredPosition());
 //                    drive.telemetry.addData("Arm speed", drive.Arm.getSpeed());
-                    if(gamepad.left_trigger.justPressed()){
+                    if(gamepad.b.justPressed()){
                         wobbleMode.cycle();
                     }
 
@@ -174,7 +169,7 @@ public class BotDriveControl extends LinearOpMode {
 //                        isShooting.toggle();
 //                    }
                     if(gamepad.right_trigger.isPressed()){
-                        drive.Shooter.setVelocity(drive.findShooterVelocity(shotDistance, targetHeight));
+                        drive.Shooter.setVelocity(targetVelocity);
                     }
                     else drive.Shooter.setVelocity(0);
 
@@ -246,7 +241,7 @@ public class BotDriveControl extends LinearOpMode {
                     //Auto PowerShot code
                     if(gamepad.left_bumper.justPressed() && !arePowerShooting){
                         arePowerShooting = true;
-                        targetHeight = powerShotHeight;
+                        targetVelocity = powerShotPower;
                         Trajectory initialPos = drive.trajectoryBuilder(currentPose)
                                 .lineToLinearHeading(powerShot)
                                 .build();
@@ -263,7 +258,7 @@ public class BotDriveControl extends LinearOpMode {
                     }
                     if(gamepad.left_stick_button.isPressed()){
                         arePowerShooting = false;
-                        targetHeight = highGoalHeight;
+                        targetVelocity = highGoalPower;
                     }
 
                     if(gamepad.left_trigger.justPressed()){

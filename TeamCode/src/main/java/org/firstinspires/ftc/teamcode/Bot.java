@@ -57,7 +57,11 @@ import org.firstinspires.ftc.teamcode.util.ServoEx;
 import org.firstinspires.ftc.teamcode.util.UltimateGoalLocalizer;
 import org.firstinspires.ftc.teamcode.util.UltimateGoalTfod;
 import org.firstinspires.ftc.teamcode.util.VuforiaUtil;
+import org.opencv.core.Rect;
 import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvPipeline;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,8 +101,8 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ANG_ACCEL;
 @Config
 public class Bot extends MecanumDrive {
     //PID Coefficients
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(4, 0, 0.5);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(4, 0, 0.5);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(10, 0, 0.7);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(10, 0, 0.7);
     public static double LATERAL_MULTIPLIER = 1.0719683964;
     public static PIDFCoefficients SHOOTER_PID = new PIDFCoefficients(40,0,3,15); //Not necessary
     public static PIDFCoefficients INTAKE_PID = new PIDFCoefficients(0, 0, 0,0); //Even less necessary
@@ -115,6 +119,7 @@ public class Bot extends MecanumDrive {
     public static boolean usingVuforia = false;
     private UltimateGoalTfod tfod;
     private OpenCvCamera camera;
+    public RingDetectorPipeline pipeline = new RingDetectorPipeline();
 
     //Finite State Machine Stuffs
     public enum Mode {
@@ -191,7 +196,7 @@ public class Bot extends MecanumDrive {
         ));
         accelConstraint = new ProfileAccelerationConstraint(MAX_ACCEL);
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,
-                new Pose2d(0.5, 0.5, Math.toRadians(5.0)), 0.5);
+                new Pose2d(0.5, 0.5, Math.toRadians(1.0)), 0.5);
 
         pathFollower = new GVFFollower(MAX_VEL, MAX_ACCEL, new Pose2d(0.5, 0.5, Math.toRadians(5.0)), 2, 1);
 
@@ -275,25 +280,25 @@ public class Bot extends MecanumDrive {
              * We can pass Vuforia the handle to a camera preview resource (on the RC phone);
              * If no camera monitor is desired, use the parameter-less constructor instead (commented out below).
              */
-//            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
 //            VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-//
-//            // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-//
-//            parameters.vuforiaLicenseKey = VUFORIA_KEY;
-//            parameters.cameraName = Webcam;
-//            parameters.useExtendedTracking = false;
-//
+
+             VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+            parameters.vuforiaLicenseKey = VUFORIA_KEY;
+            parameters.cameraName = Webcam;
+            parameters.useExtendedTracking = false;
+
 //            //  Instantiate the Vuforia engine
-//            vuforia = ClassFactory.getInstance().createVuforia(parameters);
-//
+            vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
 //        //Vuforia and Tensorflow Initialization
-//            VuforiaUtil.CameraState cameraState = new VuforiaUtil.CameraState(VuforiaLocalizer.CameraDirection.BACK, VuforiaUtil.CameraDirection.LANDSCAPE, VuforiaUtil.CameraDirection.FORWARD, 0, 0, 0, 0);
-//            vuforiaLocalizer = new UltimateGoalLocalizer(vuforia, cameraState);
-//            tfod = new UltimateGoalTfod(vuforia, hardwareMap);
+            VuforiaUtil.CameraState cameraState = new VuforiaUtil.CameraState(VuforiaLocalizer.CameraDirection.BACK, VuforiaUtil.CameraDirection.LANDSCAPE, VuforiaUtil.CameraDirection.FORWARD, 0, 0, 0, 0);
+            vuforiaLocalizer = new UltimateGoalLocalizer(vuforia, cameraState);
+            tfod = new UltimateGoalTfod(vuforia, hardwareMap);
 
         //OpenCV Initialization
-//        camera = OpenCvCameraFactory.getInstance().createWebcam(Webcam, cameraMonitorViewId);
+        camera = OpenCvCameraFactory.getInstance().createWebcam(Webcam, cameraMonitorViewId);
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -389,11 +394,11 @@ public class Bot extends MecanumDrive {
     public void initVision(){
 //        tfod.activate();
 //        vuforiaLocalizer.activate();
-//        camera.openCameraDeviceAsync(() -> {
-//            camera.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
-//            camera.setPipeline(new RingPipeline());
-//            dashboard.startCameraStream(camera, 0);
-//        });
+        camera.openCameraDeviceAsync(() -> {
+            camera.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT);
+            camera.setPipeline(pipeline);
+            dashboard.startCameraStream(camera, 0);
+        });
     }
     
     public void deactivateVision(){
@@ -502,6 +507,12 @@ public class Bot extends MecanumDrive {
         Canvas fieldOverlay = packet.fieldOverlay();
 
         packet.put("mode", mode);
+
+        if(!pipeline.getRings().isEmpty()) {
+            Rect ring = pipeline.getRings().get(0);
+            packet.put("ring y", ring.y);
+            packet.put("ring ratio", (double) ring.width / (double) ring.height);
+        }
 
         packet.put("x", currentPose.getX());
         packet.put("y", currentPose.getY());
