@@ -31,11 +31,11 @@ public class BotDriveControl extends LinearOpMode {
 
     Dpad Up = Reverse Feeder - If the feeder is on it will turn it off first
     Dpad Down = Quit Path Following
-    Dpad Left =
-    Dpad Right =
+    Dpad Left = Reset Heading to 0
+    Dpad Right = Toggle Field Centric Drive
 
-    Back = Reset Heading to 0 (Straight towards the goals)
-    Start = Toggle Field Centric Drive
+    Back =
+    Start =
 
     Right Stick Button = Reset Position to the top left
     Left Stick Button = Reset Powershot following
@@ -52,8 +52,8 @@ public class BotDriveControl extends LinearOpMode {
     private static double triggerEnd = 0.45;
 
     private Button fieldCentric = new Button(true);
-    public static Pose2d highGoal = new Pose2d(-3,-36, Math.toRadians(0));
-    public static Pose2d powerShot = new Pose2d(-3, -18.5, Math.toRadians(0));
+    public static Pose2d highGoal = new Pose2d(0,-36, Math.toRadians(0));
+    public static Pose2d powerShot = new Pose2d(0, -36, Math.toRadians(0));
     public static Pose2d wobbleDrop = new Pose2d(-60, -23.25, Math.toRadians(90));
     private boolean arePowerShooting = false;
 //    public static Pose2d middlePower = new Pose2d(2, -11.5, Math.toRadians(0));
@@ -62,12 +62,14 @@ public class BotDriveControl extends LinearOpMode {
     private ElapsedTime shootingClock = new ElapsedTime();
     private ElapsedTime reversalClock = new ElapsedTime();
     public static double shootingDelay = 300;
-    public static double shootingCooldown = 300;
+    public static double shootingCooldown = 500;
+    public static double highGoalPower = 2110; //2110 New power with angled ramp
+    public static double powerShotPower = 1995; //2000
     private enum ShootingState{
         SHOOT,
         RESET,
         WAIT
-    }
+        }
     private ShootingState shoot = ShootingState.SHOOT;
     public static double defaultSpeed = 2587;
     private Button isShooting = new Button();
@@ -78,9 +80,7 @@ public class BotDriveControl extends LinearOpMode {
     private Cycle wobbleMode = new Cycle(3);
     private boolean isBackPressed = false;
     private double linearSlideCoefficient = 1;
-    public static double highGoalPower = 2080;
-    public static double powerShotPower = 2000;
-    private double targetVelocity;
+    private double targetVelocity = highGoalPower;
 
     private enum Mode {
         DRIVER_CONTROL,
@@ -94,14 +94,15 @@ public class BotDriveControl extends LinearOpMode {
         Bot drive = new Bot(hardwareMap);
         drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         drive.setPoseEstimate(PoseStorage.currentPose);
-        drive.usingVuforia = false;
+        //drive.usingVuforia = false; //roper commented out
+        //drive.initVision(); //roper commented out
 
         drive.Arm.setPosition(0);
         drive.Arm.setSpeed(1);
 
         drive.Hand.setPosition(0.45);
         drive.Trigger.setPosition(triggerStart);
-
+        //drive.deactivateVision(); //Roper added to test - caused to fail
         waitForStart();
 
         while(opModeIsActive() && !isStopRequested()){
@@ -168,6 +169,10 @@ public class BotDriveControl extends LinearOpMode {
 //                    if(gamepad.b.justPressed()){
 //                        isShooting.toggle();
 //                    }
+                    if(gamepad.right_trigger.justPressed()){
+                        shootingClock.reset();
+                        shoot = ShootingState.WAIT;
+                    }
                     if(gamepad.right_trigger.isPressed()){
                         drive.Shooter.setVelocity(targetVelocity);
                     }
@@ -275,12 +280,12 @@ public class BotDriveControl extends LinearOpMode {
                     }
 
                     //Reset Heading
-                    if(gamepad.back.justPressed()){
+                    if(gamepad.dpad_left.isPressed()){
                         drive.resetHeading();
                     }
 
                     //Field Centric Drive Toggle
-                    if(gamepad.start.justPressed()) {
+                    if(gamepad.dpad_right.justPressed()) {
                         fieldCentric.toggle();
                     }
 
@@ -306,4 +311,3 @@ public class BotDriveControl extends LinearOpMode {
         drive.deactivateVision();
     }
 }
-

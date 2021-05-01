@@ -5,7 +5,6 @@ import androidx.annotation.NonNull;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.control.PIDCoefficients;
 import com.acmerobotics.roadrunner.control.PIDFController;
@@ -31,7 +30,6 @@ import com.acmerobotics.roadrunner.trajectory.constraints.ProfileAccelerationCon
 import com.acmerobotics.roadrunner.trajectory.constraints.TrajectoryAccelerationConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.TrajectoryVelocityConstraint;
 import com.acmerobotics.roadrunner.util.NanoClock;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -43,25 +41,19 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.teamcode.drive.DriveConstants;
-import org.firstinspires.ftc.teamcode.util.AxesSigns;
-import org.firstinspires.ftc.teamcode.util.BNO055IMUUtil;
 import org.firstinspires.ftc.teamcode.util.DashboardUtil;
 import org.firstinspires.ftc.teamcode.util.LynxModuleUtil;
 import org.firstinspires.ftc.teamcode.util.ServoEx;
 import org.firstinspires.ftc.teamcode.util.UltimateGoalLocalizer;
 import org.firstinspires.ftc.teamcode.util.UltimateGoalTfod;
-import org.firstinspires.ftc.teamcode.util.VuforiaUtil;
 import org.opencv.core.Rect;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
-import org.openftc.easyopencv.OpenCvPipeline;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -168,11 +160,14 @@ public class Bot extends MecanumDrive {
     public VoltageSensor batteryVoltageSensor;
 
     //Experimental Ring Capacity Detection
-    private double feedingPeak;
-    private double shootingPeak;
-    private boolean isFeeding = false;
-    private boolean isShooting = false;
-    public int numRings = 0;
+    private double shooterCurrent;
+    private double feederCurrent;
+//    private double feedingPeak;
+//    private double shootingPeak;
+//    public static double feedingThresh = 1;
+//    private boolean isFeeding = false;
+//    private boolean isShooting = false;
+//    public static int numRings = 0;
 
     public static double ShooterMultiplier = 2.5;
 
@@ -274,31 +269,31 @@ public class Bot extends MecanumDrive {
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
         setLocalizer(new BotOdometry(hardwareMap));
         
-        //Vuforia Object Initialization
-            /*
-             * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
-             * We can pass Vuforia the handle to a camera preview resource (on the RC phone);
-             * If no camera monitor is desired, use the parameter-less constructor instead (commented out below).
-             */
-            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-//            VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-
-             VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-
-            parameters.vuforiaLicenseKey = VUFORIA_KEY;
-            parameters.cameraName = Webcam;
-            parameters.useExtendedTracking = false;
-
-//            //  Instantiate the Vuforia engine
-            vuforia = ClassFactory.getInstance().createVuforia(parameters);
-
-//        //Vuforia and Tensorflow Initialization
-            VuforiaUtil.CameraState cameraState = new VuforiaUtil.CameraState(VuforiaLocalizer.CameraDirection.BACK, VuforiaUtil.CameraDirection.LANDSCAPE, VuforiaUtil.CameraDirection.FORWARD, 0, 0, 0, 0);
-            vuforiaLocalizer = new UltimateGoalLocalizer(vuforia, cameraState);
-            tfod = new UltimateGoalTfod(vuforia, hardwareMap);
+//        //Vuforia Object Initialization
+//            /*
+//             * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+//             * We can pass Vuforia the handle to a camera preview resource (on the RC phone);
+//             * If no camera monitor is desired, use the parameter-less constructor instead (commented out below).
+//             */
+//            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+////            VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+//
+//             VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+//
+//            parameters.vuforiaLicenseKey = VUFORIA_KEY;
+//            parameters.cameraName = Webcam;
+//            parameters.useExtendedTracking = false;
+//
+////            //  Instantiate the Vuforia engine
+//            vuforia = ClassFactory.getInstance().createVuforia(parameters);
+//
+////        //Vuforia and Tensorflow Initialization
+//            VuforiaUtil.CameraState cameraState = new VuforiaUtil.CameraState(VuforiaLocalizer.CameraDirection.BACK, VuforiaUtil.CameraDirection.LANDSCAPE, VuforiaUtil.CameraDirection.FORWARD, 0, 0, 0, 0);
+//            vuforiaLocalizer = new UltimateGoalLocalizer(vuforia, cameraState);
+//            tfod = new UltimateGoalTfod(vuforia, hardwareMap);
 
         //OpenCV Initialization
-        camera = OpenCvCameraFactory.getInstance().createWebcam(Webcam, cameraMonitorViewId);
+        camera = OpenCvCameraFactory.getInstance().createWebcam(Webcam);
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -402,8 +397,9 @@ public class Bot extends MecanumDrive {
     }
     
     public void deactivateVision(){
-        tfod.deactivate();
-        vuforiaLocalizer.deactivate();
+//        tfod.deactivate();
+//        vuforiaLocalizer.deactivate();
+        camera.closeCameraDevice(); //roper added
     }
 
     public String detectStarterStack(int iterations, int milliseconds) {
@@ -543,18 +539,26 @@ public class Bot extends MecanumDrive {
 //        camera.setPipeline(new RingPipeline());
 
 //        //Experimental Ring Capacity Detection
-//        packet.put("Intake current", Intake.getCurrent(CurrentUnit.AMPS));
-//        packet.put("Shooter current", Shooter.getCurrent(CurrentUnit.AMPS));
+        shooterCurrent = Shooter.getCurrent(CurrentUnit.AMPS);
+        feederCurrent = Intake.getCurrent(CurrentUnit.AMPS);
+
+        packet.put("Intake current", feederCurrent);
+        packet.put("Shooter current", shooterCurrent);
+//        packet.put("Intake threshold", feedingThresh);
 //        packet.put("Num rings", numRings);
-//        if(Intake.getCurrent(CurrentUnit.AMPS)<2.6){
-//            if(feedingPeak>3.0){
-//                numRings++;
-//            }
-//            feedingPeak = 0.0;
+//        if(feederCurrent > feedingPeak && !isFeeding){
+//            feedingPeak = feederCurrent;
 //        }
-//        else {
-//            if(Intake.getCurrent(CurrentUnit.AMPS)>feedingPeak){
-//                feedingPeak = Intake.getCurrent(CurrentUnit.AMPS);
+//        else{
+//            isFeeding = true;
+//            if(feederCurrent < feedingPeak){
+//                feedingPeak = feederCurrent;
+//            }
+//            else {
+//                isFeeding = false;
+//                if(feedingPeak > feedingThresh){
+//                    numRings++;
+//                }
 //            }
 //        }
 //
@@ -615,8 +619,10 @@ public class Bot extends MecanumDrive {
                 double t = follower.elapsedTime();
                 DashboardUtil.drawRobot(fieldOverlay, trajectory.get(t));
 
-                fieldOverlay.setStroke("#3F51B5");
-                DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
+                if(!poseHistory.isEmpty()) {
+                    fieldOverlay.setStroke("#3F51B5");
+                    DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
+                }
 
                 if (!follower.isFollowing()) {
                     mode = Mode.IDLE;
@@ -636,8 +642,10 @@ public class Bot extends MecanumDrive {
                 double t = follower.elapsedTime();
                 DashboardUtil.drawRobot(fieldOverlay, path.get(t));
 
-                fieldOverlay.setStroke("#3F51B5");
-                DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
+                if(!poseHistory.isEmpty()) {
+                    fieldOverlay.setStroke("#3F51B5");
+                    DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
+                }
 
                 if (!pathFollower.isFollowing()) {
                     mode = Mode.IDLE;

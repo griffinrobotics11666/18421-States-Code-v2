@@ -52,39 +52,51 @@ public class BotAutonomous extends LinearOpMode {
 //                .splineToConstantHeading(new Vector2d(-45,-33),0)
 //                .build();
         //A
-        Trajectory A1 =  drive.trajectoryBuilder(initialPose, 0.0)
+        Trajectory Aw1 =  drive.trajectoryBuilder(initialPose, 0.0)
                 .lineToConstantHeading(new Vector2d(10,-44))
                 .build();
-        Trajectory wobble2 = drive.trajectoryBuilder(A1.end())
-                .splineToSplineHeading(new Pose2d(-34, -42, Math.toRadians(90)), Math.toRadians(-180))
+        Trajectory Aw2 = drive.trajectoryBuilder(Aw1.end())
+                .lineToSplineHeading(new Pose2d(-33, -43, Math.toRadians(90)))
                 .build();
-        Trajectory A1End = drive.trajectoryBuilder(wobble2.end())
+        Trajectory A1End = drive.trajectoryBuilder(Aw2.end())
                 .lineToLinearHeading(new Pose2d(1, -42, Math.toRadians(-180)))
                 .build();
+        Trajectory A2 = drive.trajectoryBuilder(A1End.end())
+                .lineToLinearHeading(new Pose2d(-2, -36, Math.toRadians(-5)))
+                .build();
         //B
-        Trajectory B1 = drive.trajectoryBuilder(initialPose, 0.0)
+        Trajectory Bw1 = drive.trajectoryBuilder(initialPose, 0.0)
                 .splineTo(new Vector2d(-20, -20),0.0)
                 .splineToSplineHeading(new Pose2d(25, -36, Math.toRadians(-90)), 0.0)
                 .build();
-        Trajectory B2 = drive.trajectoryBuilder(B1.end())
-                .lineToSplineHeading(new Pose2d(-4, -36, Math.toRadians(-5)))
+        Trajectory B2 = drive.trajectoryBuilder(Bw1.end())
+                .lineToSplineHeading(new Pose2d(-4, -36, Math.toRadians(-1)))
                 .build();
         Trajectory B3 = drive.trajectoryBuilder(B2.end())
                 .lineToConstantHeading(new Vector2d(-24, -36))
                 .build();
-        Trajectory B1End = drive.trajectoryBuilder(wobble2.end(), 0)
+        Trajectory Bw2 = drive.trajectoryBuilder(B3.end())
+                .lineToSplineHeading(new Pose2d(-34, -40, Math.toRadians(90)))
+                .build();
+        Trajectory B1End = drive.trajectoryBuilder(Bw2.end(), 0)
                 .splineToSplineHeading(new Pose2d(19, -39, Math.toRadians(-90)), 0.0)
                 .build();
         //C
-        Trajectory C1 = drive.trajectoryBuilder(B3.end())
-                .lineToSplineHeading(new Pose2d(48, -60, Math.toRadians(-90)))
-                .build();
         Trajectory C2 = drive.trajectoryBuilder(initialPose, 0.0)
                 .splineToSplineHeading(new Pose2d(-10, -18, Math.toRadians(-2)), 0)
                 .splineToConstantHeading(new Vector2d(-4, -36), 0)
                 .build();
-        Trajectory C1End = drive.trajectoryBuilder(wobble2.end())
-                .lineToSplineHeading(new Pose2d(40, -60, Math.toRadians(-90)))
+        Trajectory C3 = drive.trajectoryBuilder(C2.end())
+                .lineToConstantHeading(new Vector2d(-24, -36))
+                .build();
+        Trajectory Cw1 = drive.trajectoryBuilder(C2.end())
+                .lineToSplineHeading(new Pose2d(48, -62, Math.toRadians(-90)))
+                .build();
+        Trajectory Cw2 = drive.trajectoryBuilder(Cw1.end())
+                .lineToSplineHeading(new Pose2d(-34, -42, Math.toRadians(90)))
+                .build();
+        Trajectory C1End = drive.trajectoryBuilder(Cw2.end())
+                .lineToSplineHeading(new Pose2d(39, -61, Math.toRadians(-135)))
                 .build();
 
 //        while(!isStarted()) {
@@ -100,19 +112,20 @@ public class BotAutonomous extends LinearOpMode {
 
         //Detects the starter stack
         ringCount = drive.pipeline.getStarterStack();
+        drive.deactivateVision();
 
         if(ringCount == 0) {
             //Wobble 1
             drive.Arm.setPosition(armBetween);
-            drive.followTrajectory(A1);
+            drive.followTrajectory(Aw1);
             plop();
             //Wobble 2
-            drive.followTrajectory(wobble2);
+            drive.followTrajectory(Aw2);
             pickup();
             drive.followTrajectory(A1End);
             plop();
             //Shooting
-            drive.followTrajectory(goShoot());
+            drive.followTrajectory(A2);
             shoot(4, 2080);
             //Parking
             park();
@@ -120,7 +133,7 @@ public class BotAutonomous extends LinearOpMode {
         if(ringCount == 1){
             //Wobble 1
             drive.Arm.setPosition(armBetween);
-            drive.followTrajectory(B1);
+            drive.followTrajectory(Bw1);
             plop();
             //Shooting
             drive.followTrajectory(B2);
@@ -133,7 +146,7 @@ public class BotAutonomous extends LinearOpMode {
             //Shooting
             shoot(2, 2120);
             //Wobble 2
-            drive.followTrajectory(wobble2);
+            drive.followTrajectory(Bw2);
             pickup();
             drive.followTrajectory(B1End);
             plop();
@@ -144,18 +157,18 @@ public class BotAutonomous extends LinearOpMode {
             //Shooting
             drive.followTrajectory(C2);
             shoot(4, 2080);
-            //Picking Up
-            drive.Intake.setPower(-0.6);
-            drive.followTrajectory(B3);
-            sleep(1000);
-            drive.Intake.setPower(0);
-            //Shooting
-            shoot(4, 2120);
+//            //Picking Up
+//            drive.Intake.setPower(-0.6);
+//            drive.followTrajectory(C3);
+//            sleep(1000);
+//            drive.Intake.setPower(0);
+//            //Shooting
+//            shoot(4, 2120);
             //Wobble 1
-            drive.followTrajectory(C1);
+            drive.followTrajectory(Cw1);
             plop();
             //Wobble 2
-            drive.followTrajectory(wobble2);
+            drive.followTrajectory(Cw2);
             pickup();
             drive.Arm.setPosition(armUp);
             drive.followTrajectory(C1End);
@@ -163,7 +176,6 @@ public class BotAutonomous extends LinearOpMode {
             //Parking
             park();
         }
-
         drive.deactivateVision();
     }
 
@@ -189,10 +201,10 @@ public class BotAutonomous extends LinearOpMode {
     private void plop(){
         drive.Arm.setPosition(armDown);
         drive.Hand.setPosition(handClosed);
-        sleep(600);
+        sleep(1000);
         drive.Arm.setPosition(armUp);
         drive.Hand.setPosition(handOpen);
-        sleep(200);
+        sleep(100);
     }
 
     private void pickup(){
@@ -206,7 +218,13 @@ public class BotAutonomous extends LinearOpMode {
 
     private Trajectory goShoot(){
         return drive.trajectoryBuilder(drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d(-4, -36, Math.toRadians(-2)))
+                .lineToLinearHeading(new Pose2d(-4, -36, Math.toRadians(0)))
+                .build();
+    }
+
+    private Trajectory secondWobble(){
+        return drive.trajectoryBuilder(drive.getPoseEstimate(), 0)
+                .lineToSplineHeading(new Pose2d(-32, -40, Math.toRadians(90)))
                 .build();
     }
 }

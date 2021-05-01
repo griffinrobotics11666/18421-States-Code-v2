@@ -89,19 +89,29 @@ public class RingDetectorPipeline extends OpenCvPipeline {
 		rings.clear();
 		labels.clear();
 
-		for(MatOfPoint contour: filterContours0Output){
-			rings.add(Imgproc.boundingRect(contour));
-			labels.add("Single");
+		if(!filterContours0Output.isEmpty()) {
+			for (MatOfPoint contour : filterContours0Output) {
+				rings.add(Imgproc.boundingRect(contour));
+				labels.add("Single");
+			}
 		}
-		for(MatOfPoint contour: filterContours1Output){
-			rings.add(Imgproc.boundingRect(contour));
-			labels.add("Multiple");
+		if(!filterContours1Output.isEmpty()) {
+			for (MatOfPoint contour : filterContours1Output) {
+				rings.add(Imgproc.boundingRect(contour));
+				labels.add("Multiple");
+			}
 		}
-		Imgproc.drawContours(source0, findContoursOutput, -1, new Scalar(0,255,0));
+		if(!findContoursOutput.isEmpty()) {
+			Imgproc.drawContours(source0, findContoursOutput, -1, new Scalar(0, 255, 0));
+		}
 
-		for(int i = 0; i < rings.size(); i++){
-			Imgproc.rectangle(source0, rings.get(i), new Scalar(0,255,0));
-			Imgproc.putText(source0, labels.get(i), rings.get(i).tl(), Imgproc.FONT_HERSHEY_PLAIN, 1.0, new Scalar(0,0,0));
+		if (!rings.isEmpty()) {
+			for (int i = 0; i < rings.size(); i++) {
+				if (rings.get(i) != null) {
+					Imgproc.rectangle(source0, rings.get(i), new Scalar(0, 255, 0));
+					Imgproc.putText(source0, labels.get(i), rings.get(i).tl(), Imgproc.FONT_HERSHEY_PLAIN, 1.0, new Scalar(0, 0, 0));
+				}
+			}
 		}
 
 		return source0;
